@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>RD AI Toolkit 🥗</title>
+<style>
+  :root {
+    --green: #2d6a4f;
+    --green-light: #52b788;
+    --green-bg: #d8f3dc;
+    --accent: #f77f00;
+    --text: #1b1b1b;
+    --gray: #6c757d;
+    --border: #dee2e6;
+    --white: #ffffff;
+    --surface: #f8f9fa;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; background: var(--surface); color: var(--text); }
+
+  /* Header */
+  header { background: var(--green); color: white; padding: 16px 20px; position: sticky; top: 0; z-index: 100; box-shadow: 0 2px 8px rgba(0,0,0,.2); }
+  header h1 { font-size: 1.1rem; font-weight: 700; }
+  header p { font-size: .75rem; opacity: .85; margin-top: 2px; }
+
+  /* Tool Grid */
+  .grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px; padding: 16px; max-width: 900px; margin: 0 auto; }
+  @media(min-width:600px) { .grid { grid-template-columns: repeat(4, 1fr); } }
+
+  .tool-btn {
+    background: white;
+    border: 2px solid var(--border);
+    border-radius: 12px;
+    padding: 14px 10px;
+    text-align: center;
+    cursor: pointer;
+    transition: all .15s;
+    display: flex; flex-direction: column; align-items: center; gap: 6px;
+  }
+  .tool-btn:hover, .tool-btn.active { border-color: var(--green-light); background: var(--green-bg); }
+  .tool-btn .icon { font-size: 1.8rem; }
+  .tool-btn .label { font-size: .7rem; font-weight: 600; color: var(--green); line-height: 1.3; }
+  .tool-btn .sub { font-size: .6rem; color: var(--gray); }
+
+  /* Panel */
+  .panel { display: none; max-width: 900px; margin: 0 auto 24px; padding: 0 16px; }
+  .panel.show { display: block; }
+  .panel-card { background: white; border-radius: 16px; padding: 20px; box-shadow: 0 2px 12px rgba(0,0,0,.07); }
+  .panel-title { font-size: 1rem; font-weight: 700; color: var(--green); margin-bottom: 16px; display: flex; align-items: center; gap: 8px; }
+
+  /* Form elements */
+  label { display: block; font-size: .8rem; font-weight: 600; margin-bottom: 4px; color: var(--gray); }
+  input[type=text], input[type=number], select, textarea {
+    width: 100%; padding: 10px 12px; border: 1.5px solid var(--border);
+    border-radius: 8px; font-size: .9rem; font-family: inherit;
+    transition: border .15s;
+  }
+  input:focus, select:focus, textarea:focus { outline: none; border-color: var(--green-light); }
+  textarea { resize: vertical; min-height: 80px; }
+  .form-row { margin-bottom: 12px; }
+  .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+  @media(max-width:480px) { .form-grid { grid-template-columns: 1fr; } }
+
+  /* Checkboxes */
+  .check-group { display: flex; flex-wrap: wrap; gap: 8px; }
+  .check-item { display: flex; align-items: center; gap: 4px; font-size: .8rem; }
+  .check-item input { width: auto; }
+
+  /* Upload */
+  .upload-area {
+    border: 2px dashed var(--border); border-radius: 12px;
+    padding: 24px; text-align: center; cursor: pointer; transition: all .15s;
+  }
+  .upload-area:hover, .upload-area.dragover { border-color: var(--green-light); background: var(--green-bg); }
+  .upload-area input { display: none; }
+  .upload-area .icon { font-size: 2rem; }
+  .upload-area p { font-size: .8rem; color: var(--gray); margin-top: 6px; }
+  #preview-img { max-width: 100%; border-radius: 8px; margin-top: 10px; display: none; }
+
+  /* Button */
+  .btn {
+    background: var(--green); color: white;
+    border: none; border-radius: 10px;
+    padding: 12px 24px; font-size: .9rem; font-weight: 700;
+    cursor: pointer; width: 100%; margin-top: 16px;
+    transition: background .15s;
+  }
+  .btn:hover { background: var(--green-light); }
+  .btn:disabled { background: #aaa; cursor: not-allowed; }
+
+  /* Result */
+  .result-box {
+    margin-top: 16px; background: var(--surface);
+    border-radius: 10px; padding: 16px;
+    border: 1.5px solid var(--border);
+    display: none;
+  }
+  .result-box.show { display: block; }
+  .result-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+  .result-header span { font-size: .75rem; font-weight: 700; color: var(--green); text-transform: uppercase; }
+  .copy-btn {
+    background: var(--accent); color: white; border: none;
+    border-radius: 6px; padding: 4px 12px; font-size: .75rem;
+    cursor: pointer; font-weight: 700;
+  }
+  .result-content {
+    font-size: .85rem; line-height: 1.7; white-space: pre-wrap;
+    max-height: 60vh; overflow-y: auto;
+  }
+  /* markdown-ish */
+  .result-content h1, .result-content h2, .result-content h3 { color: var(--green); margin: 12px 0 6px; }
+
+  /* Loading */
+  .loading { text-align: center; padding: 20px; color: var(--gray); display: none; }
+  .loading.show { display: block; }
+  .spinner { display: inline-block; width: 28px; height: 28px; border: 3px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Platform tabs (repurposer) */
+  .platform-results { display: none; }
+  .platform-results.show { display: block; }
+  .ptab-nav { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+  .ptab { background: var(--border); border: none; border-radius: 20px; padding: 5px 14px; font-size: .75rem; cursor: pointer; font-weight: 600; }
+  .ptab.active { background: var(--green); color: white; }
+  .ptab-content { display: none; }
+  .ptab-content.active { display: block; }
+
+  footer { text-align: center; padding: 20px; font-size: .7rem; color: var(--gray); }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>🥗 RD AI Toolkit</h1>
+  <p>營養師 AI 工作系統 · 8合1</p>
+</header>
+
+<!-- Tool Grid -->
+<div class="grid" id="tool-grid">
+  <button class="tool-btn" onclick="showPanel('meal')">
+    <span class="icon">📸</span>
+    <span class="label">餐點分析</span>
+    <span class="sub">Lifesum</span>
+  </button>
+  <button class="tool-btn" onclick="showPanel('menu')">
+    <span class="icon">📅</span>
+    <span class="label">週菜單</span>
+    <span class="sub">Eat This Much</span>
+  </button>
+  <button class="tool-btn" onclick="showPanel('research')">
+    <span class="icon">🔬</span>
+    <span class="label">研究搜尋</span>
+    <span class="sub">Perplexity</span>
+  </button>
+  <button class="tool-btn" onclick="showPanel('report')">
+    <span class="icon">📊</span>
+    <span class="label">衛教報告</span>
+    <span class="sub">Gamma</span>
+  </button>
+  <button class="tool-btn" onclick="showPanel('repurpose')">
+    <span class="icon">✂️</span>
+    <span class="label">內容改寫</span>
+    <span class="sub">Fomofly</span>
+  </button>
+  <button class="tool-btn" onclick="showPanel('canva')">
+    <span class="icon">🎨</span>
+    <span class="label">Canva文案</span>
+    <span class="sub">Canva</span>
+  </button>
+  <button class="tool-btn" onclick="showPanel('notebooklm')">
+    <span class="icon">📚</span>
+    <span class="label">NotebookLM</span>
+    <span class="sub">前置準備</span>
+  </button>
+  <button class="tool-btn" onclick="showPanel('kajabi')">
+    <span class="icon">🏫</span>
+    <span class="label">課程架構</span>
+    <span class="sub">Kajabi</span>
+  </button>
+</div>
+
+<!-- ── 1. Meal Analyzer ── -->
+<div class="panel" id="panel-meal">
+  <div class="panel-card">
+    <div class="panel-title">📸 餐點照片分析</div>
+    <div class="form-row">
+      <label>上傳餐點照片</label>
+      <div class="upload-area" id="upload-area" onclick="document.getElementById('photo-input').click()"
+           ondragover="event.preventDefault();this.classList.add('dragover')"
+           ondragleave="this.classList.remove('dragover')"
+           ondrop="handleDrop(event)">
+        <input type="file" id="photo-input" accept="image/*" onchange="previewPhoto(event)">
+        <div class="icon">📷</div>
+        <p>點擊上傳或拖曳照片<br>支援 JPG / PNG / WEBP</p>
+        <img id="preview-img" src="" alt="preview">
+      </div>
+    </div>
+    <div class="form-row">
+      <label>學員資訊（選填）</label>
+      <input type="text" id="meal-client-info" placeholder="如：糖尿病、目標1500kcal">
+    </div>
+    <button class="btn" onclick="analyzeMeal()">🔍 開始分析</button>
+    <div class="loading" id="meal-loading"><div class="spinner"></div><p style="margin-top:8px">AI分析中...</p></div>
+    <div class="result-box" id="meal-result">
+      <div class="result-header"><span>分析結果</span><button class="copy-btn" onclick="copyResult('meal-result-content')">複製</button></div>
+      <div class="result-content" id="meal-result-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 2. Menu Generator ── -->
+<div class="panel" id="panel-menu">
+  <div class="panel-card">
+    <div class="panel-title">📅 一週菜單生成</div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>每日熱量目標 (kcal)</label>
+        <input type="number" id="menu-calories" placeholder="1500" value="1500">
+      </div>
+      <div class="form-row">
+        <label>目標</label>
+        <select id="menu-goal">
+          <option>減脂</option><option>增肌</option><option>控糖</option><option>維持</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>天數</label>
+        <select id="menu-days">
+          <option value="3">3天</option>
+          <option value="5">5天</option>
+          <option value="7" selected>7天</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>飲食偏好</label>
+        <select id="menu-pref">
+          <option>馬來西亞華人飲食</option>
+          <option>台灣飲食</option>
+          <option>低碳飲食</option>
+          <option>地中海飲食</option>
+        </select>
+      </div>
+    </div>
+    <div class="form-row">
+      <label>飲食限制（選填）</label>
+      <input type="text" id="menu-restrictions" placeholder="如：不吃豬肉、素食">
+    </div>
+    <button class="btn" onclick="generateMenu()">📅 生成菜單</button>
+    <div class="loading" id="menu-loading"><div class="spinner"></div><p style="margin-top:8px">生成中（約20秒）...</p></div>
+    <div class="result-box" id="menu-result">
+      <div class="result-header"><span>菜單結果</span><button class="copy-btn" onclick="copyResult('menu-result-content')">複製</button></div>
+      <div class="result-content" id="menu-result-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 3. Research ── -->
+<div class="panel" id="panel-research">
+  <div class="panel-card">
+    <div class="panel-title">🔬 最新營養研究搜尋</div>
+    <div class="form-row">
+      <label>研究主題</label>
+      <input type="text" id="research-query" placeholder="如：鎂與胰島素抵抗、益生菌與體重控制">
+    </div>
+    <button class="btn" onclick="searchResearch()">🔍 搜尋研究</button>
+    <div class="loading" id="research-loading"><div class="spinner"></div><p style="margin-top:8px">搜尋文獻中...</p></div>
+    <div class="result-box" id="research-result">
+      <div class="result-header"><span>研究摘要</span><button class="copy-btn" onclick="copyResult('research-result-content')">複製</button></div>
+      <div class="result-content" id="research-result-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 4. Report ── -->
+<div class="panel" id="panel-report">
+  <div class="panel-card">
+    <div class="panel-title">📊 衛教報告生成</div>
+    <div class="form-row">
+      <label>報告主題</label>
+      <input type="text" id="report-topic" placeholder="如：地中海飲食、外食控糖攻略、益生菌迷思">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>報告類型</label>
+        <select id="report-type">
+          <option>衛教報告</option><option>外食攻略</option>
+          <option>迷思破解</option><option>比較分析</option><option>族群指南</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>目標族群</label>
+        <select id="report-audience">
+          <option>一般民眾</option><option>糖尿病患者</option>
+          <option>減重族</option><option>更年期女性</option><option>運動族群</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" onclick="generateReport()">📊 生成報告</button>
+    <div class="loading" id="report-loading"><div class="spinner"></div><p style="margin-top:8px">生成中（約30秒）...</p></div>
+    <div class="result-box" id="report-result">
+      <div class="result-header"><span>報告內容</span><button class="copy-btn" onclick="copyResult('report-result-content')">複製全文</button></div>
+      <div class="result-content" id="report-result-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 5. Repurpose ── -->
+<div class="panel" id="panel-repurpose">
+  <div class="panel-card">
+    <div class="panel-title">✂️ 衛教內容改寫</div>
+    <div class="form-row">
+      <label>原始內容（講座大綱/重點）</label>
+      <textarea id="repurpose-source" rows="5" placeholder="貼入衛教講座重點或大綱..."></textarea>
+    </div>
+    <div class="form-row">
+      <label>內容類型</label>
+      <select id="repurpose-type">
+        <option>衛教講座</option><option>研究摘要</option>
+        <option>迷思破解</option><option>外食攻略</option>
+      </select>
+    </div>
+    <div class="form-row">
+      <label>目標平台</label>
+      <div class="check-group">
+        <label class="check-item"><input type="checkbox" name="platform" value="threads" checked> Threads</label>
+        <label class="check-item"><input type="checkbox" name="platform" value="xiaohongshu" checked> 小紅書</label>
+        <label class="check-item"><input type="checkbox" name="platform" value="tiktok" checked> TikTok</label>
+        <label class="check-item"><input type="checkbox" name="platform" value="youtube"> YouTube</label>
+        <label class="check-item"><input type="checkbox" name="platform" value="instagram"> Instagram</label>
+      </div>
+    </div>
+    <button class="btn" onclick="repurposeContent()">✂️ 開始改寫</button>
+    <div class="loading" id="repurpose-loading"><div class="spinner"></div><p style="margin-top:8px">改寫中...</p></div>
+    <div class="platform-results" id="platform-results">
+      <div class="ptab-nav" id="ptab-nav"></div>
+      <div id="ptab-contents"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 6. Canva ── -->
+<div class="panel" id="panel-canva">
+  <div class="panel-card">
+    <div class="panel-title">🎨 Canva 圖卡文案</div>
+    <div class="form-row">
+      <label>主題</label>
+      <input type="text" id="canva-topic" placeholder="如：蛋白質攝取、大馬外食控糖">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>圖卡類型</label>
+        <select id="canva-type">
+          <option>食物對比卡</option><option>小知識卡</option><option>外食攻略卡</option>
+          <option>迷思破解卡</option><option>週計畫卡</option><option>數字記憶卡</option>
+        </select>
+      </div>
+      <div class="form-row">
+        <label>張數</label>
+        <select id="canva-num">
+          <option value="1">1張</option><option value="3" selected>3張</option>
+          <option value="5">5張</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" onclick="generateCanva()">🎨 生成文案</button>
+    <div class="loading" id="canva-loading"><div class="spinner"></div><p style="margin-top:8px">生成中...</p></div>
+    <div class="result-box" id="canva-result">
+      <div class="result-header"><span>Canva 文案（直接複製貼入）</span><button class="copy-btn" onclick="copyResult('canva-result-content')">複製</button></div>
+      <div class="result-content" id="canva-result-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 7. NotebookLM ── -->
+<div class="panel" id="panel-notebooklm">
+  <div class="panel-card">
+    <div class="panel-title">📚 NotebookLM 前置準備</div>
+    <div class="form-row">
+      <label>研究主題</label>
+      <input type="text" id="nlm-topic" placeholder="如：鎂與胰島素抵抗">
+    </div>
+    <div class="form-row">
+      <label>論文摘要或重點（可多篇）</label>
+      <textarea id="nlm-abstracts" rows="6" placeholder="從 PubMed 複製論文 Abstract 貼在這裡..."></textarea>
+    </div>
+    <button class="btn" onclick="prepNotebooklm()">📚 生成問題清單</button>
+    <div class="loading" id="nlm-loading"><div class="spinner"></div><p style="margin-top:8px">整理中...</p></div>
+    <div class="result-box" id="nlm-result">
+      <div class="result-header"><span>NotebookLM 使用指南</span><button class="copy-btn" onclick="copyResult('nlm-result-content')">複製</button></div>
+      <div class="result-content" id="nlm-result-content"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ── 8. Kajabi ── -->
+<div class="panel" id="panel-kajabi">
+  <div class="panel-card">
+    <div class="panel-title">🏫 課程架構生成</div>
+    <div class="form-row">
+      <label>課程主題</label>
+      <input type="text" id="kajabi-topic" placeholder="如：21天控糖飲食計畫、外食也能瘦">
+    </div>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>定價</label>
+        <input type="text" id="kajabi-price" value="5000 TWD" placeholder="5000 TWD">
+      </div>
+      <div class="form-row">
+        <label>單元數</label>
+        <select id="kajabi-modules">
+          <option value="4">4單元</option><option value="6" selected>6單元</option>
+          <option value="8">8單元</option><option value="10">10單元</option>
+        </select>
+      </div>
+    </div>
+    <button class="btn" onclick="generateKajabi()">🏫 生成課程架構</button>
+    <div class="loading" id="kajabi-loading"><div class="spinner"></div><p style="margin-top:8px">生成中（約30秒）...</p></div>
+    <div class="result-box" id="kajabi-result">
+      <div class="result-header"><span>課程架構＋銷售文案＋Email序列</span><button class="copy-btn" onclick="copyResult('kajabi-result-content')">複製全文</button></div>
+      <div class="result-content" id="kajabi-result-content"></div>
+    </div>
+  </div>
+</div>
+
+<footer>RD AI Toolkit · 僅供授權營養師使用</footer>
+
+<script>
+// Panel management
+const panels = ['meal','menu','research','report','repurpose','canva','notebooklm','kajabi'];
+function showPanel(id) {
+  panels.forEach(p => {
+    document.getElementById('panel-'+p).classList.remove('show');
+    document.querySelectorAll('.tool-btn')[panels.indexOf(p)].classList.remove('active');
+  });
+  document.getElementById('panel-'+id).classList.add('show');
+  document.querySelectorAll('.tool-btn')[panels.indexOf(id)].classList.add('active');
+  document.getElementById('panel-'+id).scrollIntoView({behavior:'smooth', block:'start'});
+}
+
+function setLoading(id, on) {
+  document.getElementById(id+'-loading').classList.toggle('show', on);
+  document.querySelector('#panel-'+id+' .btn').disabled = on;
+}
+
+function showResult(id, text) {
+  const box = document.getElementById(id+'-result');
+  const content = document.getElementById(id+'-result-content');
+  content.textContent = text;
+  box.classList.add('show');
+}
+
+function copyResult(id) {
+  const text = document.getElementById(id).textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.target;
+    btn.textContent = '✅ 已複製';
+    setTimeout(() => btn.textContent = '複製', 2000);
+  });
+}
+
+// ── Photo upload ──
+function previewPhoto(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const img = document.getElementById('preview-img');
+  img.src = URL.createObjectURL(file);
+  img.style.display = 'block';
+}
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-area').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) {
+    document.getElementById('photo-input').files = e.dataTransfer.files;
+    const img = document.getElementById('preview-img');
+    img.src = URL.createObjectURL(file);
+    img.style.display = 'block';
+  }
+}
+
+// ── 1. Meal ──
+async function analyzeMeal() {
+  const file = document.getElementById('photo-input').files[0];
+  if (!file) { alert('請先上傳照片'); return; }
+  setLoading('meal', true);
+  const fd = new FormData();
+  fd.append('photo', file);
+  fd.append('client_info', document.getElementById('meal-client-info').value);
+  try {
+    const r = await fetch('/analyze-meal', { method:'POST', body:fd });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    showResult('meal', d.result);
+  } catch(e) { alert('錯誤：'+e.message); }
+  setLoading('meal', false);
+}
+
+// ── 2. Menu ──
+async function generateMenu() {
+  setLoading('menu', true);
+  try {
+    const r = await fetch('/generate-menu', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        calories: document.getElementById('menu-calories').value,
+        goal: document.getElementById('menu-goal').value,
+        days: document.getElementById('menu-days').value,
+        food_pref: document.getElementById('menu-pref').value,
+        restrictions: document.getElementById('menu-restrictions').value,
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    showResult('menu', d.result);
+  } catch(e) { alert('錯誤：'+e.message); }
+  setLoading('menu', false);
+}
+
+// ── 3. Research ──
+async function searchResearch() {
+  const q = document.getElementById('research-query').value.trim();
+  if (!q) { alert('請輸入研究主題'); return; }
+  setLoading('research', true);
+  try {
+    const r = await fetch('/search-research', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ query: q })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    let text = d.result;
+    if (d.citations && d.citations.length) {
+      text += '\n\n📚 來源：\n' + d.citations.map((u,i) => `${i+1}. ${u}`).join('\n');
+    }
+    showResult('research', text);
+  } catch(e) { alert('錯誤：'+e.message); }
+  setLoading('research', false);
+}
+
+// ── 4. Report ──
+async function generateReport() {
+  const topic = document.getElementById('report-topic').value.trim();
+  if (!topic) { alert('請輸入主題'); return; }
+  setLoading('report', true);
+  try {
+    const r = await fetch('/generate-report', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic,
+        report_type: document.getElementById('report-type').value,
+        audience: document.getElementById('report-audience').value,
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    showResult('report', d.result);
+  } catch(e) { alert('錯誤：'+e.message); }
+  setLoading('report', false);
+}
+
+// ── 5. Repurpose ──
+async function repurposeContent() {
+  const source = document.getElementById('repurpose-source').value.trim();
+  if (!source) { alert('請輸入原始內容'); return; }
+  const platforms = [...document.querySelectorAll('input[name=platform]:checked')].map(x=>x.value);
+  if (!platforms.length) { alert('請選擇至少一個平台'); return; }
+  setLoading('repurpose', true);
+  document.getElementById('platform-results').classList.remove('show');
+  try {
+    const r = await fetch('/repurpose-content', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        source,
+        platforms,
+        content_type: document.getElementById('repurpose-type').value,
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    renderPlatformResults(d.results);
+  } catch(e) { alert('錯誤：'+e.message); }
+  setLoading('repurpose', false);
+}
+
+function renderPlatformResults(results) {
+  const nav = document.getElementById('ptab-nav');
+  const contents = document.getElementById('ptab-contents');
+  nav.innerHTML = '';
+  contents.innerHTML = '';
+  const keys = Object.keys(results);
+  keys.forEach((key, i) => {
+    const tab = document.createElement('button');
+    tab.className = 'ptab' + (i===0?' active':'');
+    tab.textContent = results[key].platform;
+    tab.onclick = () => {
+      document.querySelectorAll('.ptab').forEach(t=>t.classList.remove('active'));
+      document.querySelectorAll('.ptab-content').forEach(c=>c.classList.remove('active'));
+      tab.classList.add('active');
+      document.getElementById('ptab-'+key).classList.add('active');
+    };
+    nav.appendChild(tab);
+
+    const div = document.createElement('div');
+    div.className = 'ptab-content result-box show' + (i===0?' active':'');
+    div.id = 'ptab-'+key;
+    div.innerHTML = `
+      <div class="result-header">
+        <span>${results[key].platform}</span>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText(document.getElementById('ptab-content-${key}').textContent).then(()=>{this.textContent='✅已複製';setTimeout(()=>this.textContent='複製',2000)})">複製</button>
+      </div>
+      <div class="result-content" id="ptab-content-${key}">${results[key].content}</div>`;
+    contents.appendChild(div);
+  });
+  document.getElementById('platform-results').classList.add('show');
+}
+
+// ── 6. Canva ──
+async function generateCanva() {
+  const topic = document.getElementById('canva-topic').value.trim();
+  if (!topic) { alert('請輸入主題'); return; }
+  setLoading('canva', true);
+  try {
+    const r = await fetch('/canva-content', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic,
+        card_type: document.getElementById('canva-type').value,
+        num_cards: document.getElementById('canva-num').value,
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    showResult('canva', d.result);
+  } catch(e) { alert('錯誤：'+e.message); }
+  setLoading('canva', false);
+}
+
+// ── 7. NotebookLM ──
+async function prepNotebooklm() {
+  const topic = document.getElementById('nlm-topic').value.trim();
+  const abstracts = document.getElementById('nlm-abstracts').value.trim();
+  if (!topic || !abstracts) { alert('請填入主題和文獻內容'); return; }
+  setLoading('notebooklm', true);
+  try {
+    const r = await fetch('/notebooklm-prep', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({ topic, abstracts })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    showResult('notebooklm', d.result);
+  } catch(e) { alert('錯誤：'+e.message); }
+  setLoading('notebooklm', false);
+}
+
+// ── 8. Kajabi ──
+async function generateKajabi() {
+  const topic = document.getElementById('kajabi-topic').value.trim();
+  if (!topic) { alert('請輸入課程主題'); return; }
+  setLoading('kajabi', true);
+  try {
+    const r = await fetch('/kajabi-builder', {
+      method:'POST', headers:{'Content-Type':'application/json'},
+      body: JSON.stringify({
+        topic,
+        price: document.getElementById('kajabi-price').value,
+        modules: document.getElementById('kajabi-modules').value,
+      })
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    showResult('kajabi', d.result);
+  } catch(e) { alert('錯誤：'+e.message); }
+  setLoading('kajabi', false);
+}
+
+// Auto-show first panel on load
+showPanel('meal');
+</script>
+</body>
+</html>
