@@ -4,7 +4,7 @@ from pathlib import Path
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
 
-GEMINI_MODEL = "gemini-1.5-flash"
+GEMINI_MODEL = "gemini-2.0-flash"
 PERPLEXITY_MODEL = "sonar"
 
 BASE_DIR = Path(__file__).parent
