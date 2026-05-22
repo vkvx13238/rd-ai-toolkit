@@ -167,7 +167,7 @@ def api_config():
         "platforms": {k: v["name"] for k, v in PLATFORMS.items()},
         "card_types": list(CARD_TYPES.values()),
         "has_perplexity": bool(config.PERPLEXITY_API_KEY),
-        "has_gemini": bool(config.GEMINI_API_KEY),
+        "has_groq": bool(config.GROQ_API_KEY),
     })
 
 
