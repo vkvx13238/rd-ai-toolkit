@@ -168,15 +168,14 @@ def api_nutrition_lookup():
     portion = float(data.get("portion_g", 100) or 100)
     if not food:
         return jsonify({"error": "請輸入食物名稱"}), 400
-    result = lookup(food, portion)
-    if not result:
-        # 嘗試 unicode normalize 後再查一次
-        import unicodedata
-        food_nfc = unicodedata.normalize("NFC", food)
-        result = lookup(food_nfc, portion)
-    if not result:
-        return jsonify({"error": f"找不到「{food}」(repr:{repr(food)})，請試試英文名稱"}), 404
-    return jsonify({"result": result})
+    from modules.nutrition_db import _local_lookup
+    matched_key, matched_data = _local_lookup(food)
+    return jsonify({
+        "food_received": food,
+        "food_repr": repr(food),
+        "local_found": matched_data is not None,
+        "local_key": matched_key,
+    })
 
 
 @app.route("/nutrition-debug")
