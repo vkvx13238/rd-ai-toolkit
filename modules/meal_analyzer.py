@@ -3,7 +3,7 @@ Meal Photo Analyzer — Lifesum 替代
 學員上傳餐點照片 → 熱量/巨量營養素/控糖評估
 """
 
-import google.generativeai as genai
+from google import genai
 import PIL.Image
 from datetime import datetime
 from pathlib import Path
@@ -13,7 +13,7 @@ import config
 
 
 def analyze_meal(image_path: str, client_info: str = "") -> dict:
-    model = genai.GenerativeModel(config.GEMINI_MODEL)
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
     image = PIL.Image.open(image_path)
 
     prompt = f"""{config.RD_CONTEXT}
@@ -49,7 +49,10 @@ def analyze_meal(image_path: str, client_info: str = "") -> dict:
 血糖衝擊：低/中/高｜理由一句話
 """
 
-    response = model.generate_content([prompt, image])
+    response = client.models.generate_content(
+        model=config.GEMINI_MODEL,
+        contents=[image, prompt],
+    )
     analysis = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = config.OUTPUTS_DIR / f"meal_analysis_{timestamp}.md"

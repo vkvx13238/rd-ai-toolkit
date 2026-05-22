@@ -4,7 +4,7 @@ Nutrition Research Searcher — Perplexity 替代
 有 Perplexity API Key → 即時搜尋；無 → 用 Gemini 知識庫
 """
 
-import google.generativeai as genai
+from google import genai
 import requests
 from datetime import datetime
 from pathlib import Path
@@ -52,7 +52,7 @@ def _via_perplexity(query: str) -> dict:
 
 
 def _via_gemini(query: str) -> dict:
-    model = genai.GenerativeModel(config.GEMINI_MODEL)
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
     prompt = f"""{config.RD_CONTEXT}
 
 請整理「{query}」的科學研究知識（優先2020-2025年）：
@@ -64,7 +64,7 @@ def _via_gemini(query: str) -> dict:
 ## 💬 社群媒體一句話開頭（馬來西亞華人受眾，Threads/小紅書適用）
 
 注意：內容必須科學正確，不確定的請說明。"""
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model=config.GEMINI_MODEL, contents=prompt)
     return _save(query, response.text, [])
 
 

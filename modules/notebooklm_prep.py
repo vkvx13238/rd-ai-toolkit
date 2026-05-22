@@ -4,7 +4,7 @@ NotebookLM Prep Tool — NotebookLM 前置處理
 並生成 Podcast 問題清單、關鍵詞摘要
 """
 
-import google.generativeai as genai
+from google import genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -13,7 +13,7 @@ import config
 
 
 def prepare_for_notebooklm(topic: str, abstracts: str) -> dict:
-    model = genai.GenerativeModel(config.GEMINI_MODEL)
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -75,7 +75,7 @@ def prepare_for_notebooklm(topic: str, abstracts: str) -> dict:
 **衛教重點（5個，每點可做一張 Canva 圖卡）：**
 """
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model=config.GEMINI_MODEL, contents=prompt)
     content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = config.OUTPUTS_DIR / f"notebooklm_prep_{timestamp}.md"

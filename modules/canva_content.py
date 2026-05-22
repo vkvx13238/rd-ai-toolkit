@@ -3,7 +3,7 @@ Canva Content Generator — Canva 替代（文案部分）
 生成圖卡文案，直接貼入 Canva 即用
 """
 
-import google.generativeai as genai
+from google import genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -21,7 +21,7 @@ CARD_TYPES = {
 
 
 def generate_canva_copy(topic: str, card_type: str = "小知識卡", num_cards: int = 3) -> dict:
-    model = genai.GenerativeModel(config.GEMINI_MODEL)
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -48,7 +48,7 @@ def generate_canva_copy(topic: str, card_type: str = "小知識卡", num_cards: 
 - 含1個英文術語/數字增加可信度
 - 繁體中文為主"""
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model=config.GEMINI_MODEL, contents=prompt)
     content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = config.OUTPUTS_DIR / f"canva_{timestamp}.md"

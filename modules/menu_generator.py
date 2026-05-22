@@ -3,7 +3,7 @@ Weekly Menu Generator — Eat This Much 替代
 輸入熱量目標 → 自動生成 N 天菜單＋採購清單
 """
 
-import google.generativeai as genai
+from google import genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -18,7 +18,7 @@ def generate_menu(
     food_pref: str = "馬來西亞華人飲食",
     days: int = 7,
 ) -> dict:
-    model = genai.GenerativeModel(config.GEMINI_MODEL)
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -47,7 +47,7 @@ def generate_menu(
 ## 💡 使用說明（3-5點重要提醒）
 """
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model=config.GEMINI_MODEL, contents=prompt)
     content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = config.OUTPUTS_DIR / f"menu_{days}days_{timestamp}.md"

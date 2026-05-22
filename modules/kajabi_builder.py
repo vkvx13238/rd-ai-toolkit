@@ -3,7 +3,7 @@ Kajabi Course Builder — Kajabi 替代（架構生成）
 輸入課程主題 → 自動生成完整課程架構、銷售頁文案、Email序列
 """
 
-import google.generativeai as genai
+from google import genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -17,7 +17,7 @@ def generate_course_structure(
     price: str = "5000 TWD",
     modules: int = 6,
 ) -> dict:
-    model = genai.GenerativeModel(config.GEMINI_MODEL)
+    client = genai.Client(api_key=config.GEMINI_API_KEY)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -70,7 +70,7 @@ def generate_course_structure(
 
 語言：繁體中文，馬來西亞在地化，價值主張清晰。"""
 
-    response = model.generate_content(prompt)
+    response = client.models.generate_content(model=config.GEMINI_MODEL, contents=prompt)
     content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe = topic.replace(" ", "_")[:20]
