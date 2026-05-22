@@ -18,6 +18,7 @@ from modules.content_repurposer import repurpose, PLATFORMS
 from modules.canva_content import generate_canva_copy, CARD_TYPES
 from modules.notebooklm_prep import prepare_for_notebooklm
 from modules.kajabi_builder import generate_course_structure
+from modules.nutrition_db import lookup, format_nutrition_table
 
 app = Flask(__name__)
 app.config["MAX_CONTENT_LENGTH"] = 10 * 1024 * 1024  # 10MB upload limit
@@ -157,6 +158,20 @@ def api_kajabi_builder():
         modules=int(data.get("modules", 6)),
     )
     return jsonify({"result": result["content"]})
+
+
+# ── 9. Nutrition Lookup ───────────────────────────────────────────────────────
+@app.route("/nutrition-lookup", methods=["POST"])
+def api_nutrition_lookup():
+    data = request.get_json()
+    food = data.get("food", "").strip()
+    portion = float(data.get("portion_g", 100))
+    if not food:
+        return jsonify({"error": "請輸入食物名稱"}), 400
+    result = lookup(food, portion)
+    if not result:
+        return jsonify({"error": f"找不到「{food}」的資料，請試試英文名稱或換個寫法"}), 404
+    return jsonify({"result": result})
 
 
 # ── Config ────────────────────────────────────────────────────────────────────

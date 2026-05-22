@@ -178,6 +178,11 @@
     <span class="label">課程架構</span>
     <span class="sub">Kajabi</span>
   </button>
+  <button class="tool-btn" onclick="showPanel('nutrition')">
+    <span class="icon">🔢</span>
+    <span class="label">營養查詢</span>
+    <span class="sub">資料庫精確值</span>
+  </button>
 </div>
 
 <!-- ── 1. Meal Analyzer ── -->
@@ -423,11 +428,35 @@
   </div>
 </div>
 
+<!-- ── 9. Nutrition Lookup ── -->
+<div class="panel" id="panel-nutrition">
+  <div class="panel-card">
+    <div class="panel-title">🔢 食物營養查詢（資料庫精確值）</div>
+    <p style="font-size:.8rem;color:#6c757d;margin-bottom:12px">來源：本地大馬/台灣食物資料庫 + USDA FoodData Central｜✓ 比 AI 估算更精確</p>
+    <div class="form-grid">
+      <div class="form-row">
+        <label>食物名稱</label>
+        <input type="text" id="nut-food" placeholder="如：白飯、雞胸肉、nasi lemak、banana">
+      </div>
+      <div class="form-row">
+        <label>份量 (g)｜每份食物填 100</label>
+        <input type="number" id="nut-portion" value="100" min="1" max="2000">
+      </div>
+    </div>
+    <button class="btn" onclick="lookupNutrition()">🔍 查詢</button>
+    <div class="loading" id="nutrition-loading"><div class="spinner"></div></div>
+    <div class="result-box" id="nutrition-result">
+      <div class="result-header"><span>營養資料</span><button class="copy-btn" onclick="copyResult('nutrition-result-content')">複製</button></div>
+      <div class="result-content" id="nutrition-result-content"></div>
+    </div>
+  </div>
+</div>
+
 <footer>RD AI Toolkit · 僅供授權營養師使用</footer>
 
 <script>
 // Panel management
-const panels = ['meal','menu','research','report','repurpose','canva','notebooklm','kajabi'];
+const panels = ['meal','menu','research','report','repurpose','canva','notebooklm','kajabi','nutrition'];
 function showPanel(id) {
   panels.forEach(p => {
     document.getElementById('panel-'+p).classList.remove('show');
@@ -673,6 +702,28 @@ async function generateKajabi() {
     showResult('kajabi', d.result);
   } catch(e) { alert('錯誤：'+e.message); }
   setLoading('kajabi', false);
+}
+
+// ── 9. Nutrition Lookup ──
+async function lookupNutrition() {
+  const food = document.getElementById('nut-food').value.trim();
+  const portion = document.getElementById('nut-portion').value;
+  if (!food) { alert('請輸入食物名稱'); return; }
+  setLoading('nutrition', true);
+  try {
+    const r = await fetch('/nutrition-lookup', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({food, portion_g: parseFloat(portion)})
+    });
+    const d = await r.json();
+    if (d.error) throw new Error(d.error);
+    const res = d.result;
+    const portion_label = typeof res.portion_g === 'number' ? res.portion_g + 'g' : res.portion_g;
+    const note = res.note ? `\n備註：${res.note}` : '';
+    const text = `食物：${res.name}\n份量：${portion_label}\n\n熱量：${res.calories} kcal\n碳水：${res.carbs_g}g\n蛋白質：${res.protein_g}g\n脂肪：${res.fat_g}g\n膳食纖維：${res.fiber_g}g\n\n資料來源：${res.source}${note}`;
+    showResult('nutrition', text);
+  } catch(e) { alert('錯誤：' + e.message); }
+  setLoading('nutrition', false);
 }
 
 // Auto-show first panel on load
