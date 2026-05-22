@@ -3,7 +3,7 @@ Kajabi Course Builder — Kajabi 替代（架構生成）
 輸入課程主題 → 自動生成完整課程架構、銷售頁文案、Email序列
 """
 
-import anthropic
+import google.generativeai as genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -17,7 +17,7 @@ def generate_course_structure(
     price: str = "5000 TWD",
     modules: int = 6,
 ) -> dict:
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    model = genai.GenerativeModel(config.GEMINI_MODEL)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -70,13 +70,8 @@ def generate_course_structure(
 
 語言：繁體中文，馬來西亞在地化，價值主張清晰。"""
 
-    msg = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    content = msg.content[0].text
+    response = model.generate_content(prompt)
+    content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe = topic.replace(" ", "_")[:20]
     out = config.OUTPUTS_DIR / f"kajabi_course_{safe}_{timestamp}.md"

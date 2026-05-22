@@ -1,11 +1,15 @@
 import os
 from pathlib import Path
+import google.generativeai as genai
 
-ANTHROPIC_API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "")
 PERPLEXITY_API_KEY = os.environ.get("PERPLEXITY_API_KEY", "")
 
-CLAUDE_MODEL = "claude-sonnet-4-6"
+GEMINI_MODEL = "gemini-1.5-flash"
 PERPLEXITY_MODEL = "sonar"
+
+if GEMINI_API_KEY:
+    genai.configure(api_key=GEMINI_API_KEY)
 
 BASE_DIR = Path(__file__).parent
 OUTPUTS_DIR = BASE_DIR / "outputs"

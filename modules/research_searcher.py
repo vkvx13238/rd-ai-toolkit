@@ -1,10 +1,10 @@
 """
 Nutrition Research Searcher — Perplexity 替代
 查最新營養研究，附文獻來源
-有 Perplexity API Key → 即時搜尋；無 → 用 Claude 知識庫
+有 Perplexity API Key → 即時搜尋；無 → 用 Gemini 知識庫
 """
 
-import anthropic
+import google.generativeai as genai
 import requests
 from datetime import datetime
 from pathlib import Path
@@ -16,7 +16,7 @@ import config
 def search_research(query: str) -> dict:
     if config.PERPLEXITY_API_KEY:
         return _via_perplexity(query)
-    return _via_claude(query)
+    return _via_gemini(query)
 
 
 def _via_perplexity(query: str) -> dict:
@@ -51,8 +51,8 @@ def _via_perplexity(query: str) -> dict:
     return _save(query, content, citations)
 
 
-def _via_claude(query: str) -> dict:
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+def _via_gemini(query: str) -> dict:
+    model = genai.GenerativeModel(config.GEMINI_MODEL)
     prompt = f"""{config.RD_CONTEXT}
 
 請整理「{query}」的科學研究知識（優先2020-2025年）：
@@ -64,12 +64,8 @@ def _via_claude(query: str) -> dict:
 ## 💬 社群媒體一句話開頭（馬來西亞華人受眾，Threads/小紅書適用）
 
 注意：內容必須科學正確，不確定的請說明。"""
-    msg = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}],
-    )
-    return _save(query, msg.content[0].text, [])
+    response = model.generate_content(prompt)
+    return _save(query, response.text, [])
 
 
 def _save(query: str, content: str, citations: list) -> dict:
@@ -86,7 +82,7 @@ def run_interactive():
     print("\n🔬 營養研究搜尋（Perplexity 替代）")
     print("=" * 40)
     if not config.PERPLEXITY_API_KEY:
-        print("💡 提示：設定 PERPLEXITY_API_KEY 可搜尋最新文獻（現在用 Claude 知識庫）\n")
+        print("💡 提示：設定 PERPLEXITY_API_KEY 可搜尋最新文獻（現在用 Gemini 知識庫）\n")
     query = input("研究主題（如：鎂與胰島素抵抗、益生菌與體重）：").strip()
     print("\n⏳ 搜尋中...")
     result = search_research(query)

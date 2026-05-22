@@ -4,7 +4,7 @@ NotebookLM Prep Tool — NotebookLM 前置處理
 並生成 Podcast 問題清單、關鍵詞摘要
 """
 
-import anthropic
+import google.generativeai as genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -13,14 +13,7 @@ import config
 
 
 def prepare_for_notebooklm(topic: str, abstracts: str) -> dict:
-    """
-    整理論文摘要，生成 NotebookLM 使用的問題清單和摘要。
-
-    Args:
-        topic: 主題（如「鎂與胰島素抵抗」）
-        abstracts: 貼入的論文摘要或重點（可多篇）
-    """
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    model = genai.GenerativeModel(config.GEMINI_MODEL)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -82,13 +75,8 @@ def prepare_for_notebooklm(topic: str, abstracts: str) -> dict:
 **衛教重點（5個，每點可做一張 Canva 圖卡）：**
 """
 
-    msg = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=3000,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    content = msg.content[0].text
+    response = model.generate_content(prompt)
+    content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = config.OUTPUTS_DIR / f"notebooklm_prep_{timestamp}.md"
     out.write_text(f"# NotebookLM 前置準備：{topic}\n\n{content}", encoding="utf-8")
@@ -100,7 +88,7 @@ def run_interactive():
     print("=" * 40)
     print("把論文/文章摘要整理好，再丟進 NotebookLM 效率更高！\n")
 
-    topic = input("研究主題（如：鎂與胰岛素抵抗）：").strip()
+    topic = input("研究主題（如：鎂與胰島素抵抗）：").strip()
     print("\n貼入論文摘要或重點（可多篇，輸入完後空白行按兩次 Enter）：")
     lines, empty = [], 0
     while True:

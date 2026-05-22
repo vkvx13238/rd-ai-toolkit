@@ -3,30 +3,18 @@ Meal Photo Analyzer — Lifesum 替代
 學員上傳餐點照片 → 熱量/巨量營養素/控糖評估
 """
 
-import anthropic
-import base64
-from pathlib import Path
+import google.generativeai as genai
+import PIL.Image
 from datetime import datetime
+from pathlib import Path
 import sys
 sys.path.insert(0, str(Path(__file__).parent.parent))
 import config
 
 
-def encode_image(image_path: str) -> tuple:
-    path = Path(image_path)
-    media_type_map = {
-        ".jpg": "image/jpeg", ".jpeg": "image/jpeg",
-        ".png": "image/png", ".gif": "image/gif", ".webp": "image/webp",
-    }
-    media_type = media_type_map.get(path.suffix.lower(), "image/jpeg")
-    with open(image_path, "rb") as f:
-        data = base64.standard_b64encode(f.read()).decode("utf-8")
-    return data, media_type
-
-
 def analyze_meal(image_path: str, client_info: str = "") -> dict:
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
-    image_data, media_type = encode_image(image_path)
+    model = genai.GenerativeModel(config.GEMINI_MODEL)
+    image = PIL.Image.open(image_path)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -61,19 +49,8 @@ def analyze_meal(image_path: str, client_info: str = "") -> dict:
 血糖衝擊：低/中/高｜理由一句話
 """
 
-    message = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=1500,
-        messages=[{
-            "role": "user",
-            "content": [
-                {"type": "image", "source": {"type": "base64", "media_type": media_type, "data": image_data}},
-                {"type": "text", "text": prompt},
-            ],
-        }],
-    )
-
-    analysis = message.content[0].text
+    response = model.generate_content([prompt, image])
+    analysis = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = config.OUTPUTS_DIR / f"meal_analysis_{timestamp}.md"
     out.write_text(

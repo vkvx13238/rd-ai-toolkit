@@ -3,7 +3,7 @@ Nutrition Education Report Generator — Gamma 替代
 一句話主題 → 完整衛教報告（可貼入 Gamma/投影片）
 """
 
-import anthropic
+import google.generativeai as genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -20,7 +20,7 @@ REPORT_TYPES = {
 
 
 def generate_report(topic: str, report_type: str = "衛教報告", audience: str = "一般民眾") -> dict:
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    model = genai.GenerativeModel(config.GEMINI_MODEL)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -59,13 +59,8 @@ def generate_report(topic: str, report_type: str = "衛教報告", audience: str
 
 語氣：專業但親切，適合一般民眾理解。加入馬來西亞在地食物和場景例子。"""
 
-    msg = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=3000,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    content = msg.content[0].text
+    response = model.generate_content(prompt)
+    content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     safe = topic.replace(" ", "_")[:25]
     out = config.OUTPUTS_DIR / f"report_{safe}_{timestamp}.md"

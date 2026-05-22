@@ -3,7 +3,7 @@ Weekly Menu Generator — Eat This Much 替代
 輸入熱量目標 → 自動生成 N 天菜單＋採購清單
 """
 
-import anthropic
+import google.generativeai as genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -18,7 +18,7 @@ def generate_menu(
     food_pref: str = "馬來西亞華人飲食",
     days: int = 7,
 ) -> dict:
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    model = genai.GenerativeModel(config.GEMINI_MODEL)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -47,13 +47,8 @@ def generate_menu(
 ## 💡 使用說明（3-5點重要提醒）
 """
 
-    message = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=4000,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    content = message.content[0].text
+    response = model.generate_content(prompt)
+    content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = config.OUTPUTS_DIR / f"menu_{days}days_{timestamp}.md"
     out.write_text(

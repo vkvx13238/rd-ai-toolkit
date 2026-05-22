@@ -3,7 +3,7 @@ Canva Content Generator — Canva 替代（文案部分）
 生成圖卡文案，直接貼入 Canva 即用
 """
 
-import anthropic
+import google.generativeai as genai
 from datetime import datetime
 from pathlib import Path
 import sys
@@ -21,7 +21,7 @@ CARD_TYPES = {
 
 
 def generate_canva_copy(topic: str, card_type: str = "小知識卡", num_cards: int = 3) -> dict:
-    client = anthropic.Anthropic(api_key=config.ANTHROPIC_API_KEY)
+    model = genai.GenerativeModel(config.GEMINI_MODEL)
 
     prompt = f"""{config.RD_CONTEXT}
 
@@ -48,13 +48,8 @@ def generate_canva_copy(topic: str, card_type: str = "小知識卡", num_cards: 
 - 含1個英文術語/數字增加可信度
 - 繁體中文為主"""
 
-    msg = client.messages.create(
-        model=config.CLAUDE_MODEL,
-        max_tokens=2000,
-        messages=[{"role": "user", "content": prompt}],
-    )
-
-    content = msg.content[0].text
+    response = model.generate_content(prompt)
+    content = response.text
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
     out = config.OUTPUTS_DIR / f"canva_{timestamp}.md"
     out.write_text(f"# Canva 圖卡文案：{topic}｜{card_type}\n\n{content}", encoding="utf-8")
