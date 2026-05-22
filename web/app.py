@@ -168,29 +168,12 @@ def api_nutrition_lookup():
     portion = float(data.get("portion_g", 100) or 100)
     if not food:
         return jsonify({"error": "請輸入食物名稱"}), 400
-    from modules.nutrition_db import _local_lookup
-    matched_key, matched_data = _local_lookup(food)
-    return jsonify({
-        "food_received": food,
-        "food_repr": repr(food),
-        "local_found": matched_data is not None,
-        "local_key": matched_key,
-    })
+    result = lookup(food, portion)
+    if not result:
+        return jsonify({"error": f"找不到「{food}」，請試試：白飯、雞胸肉、nasi lemak、banana 等"}), 404
+    return jsonify({"result": result})
 
 
-@app.route("/nutrition-debug")
-def nutrition_debug():
-    from modules.nutrition_db import _DB, _local_lookup
-    keys = list(_DB.keys())[:10]
-    test_key = "白飯"  # 白飯
-    matched_key, matched_data = _local_lookup(test_key)
-    return jsonify({
-        "first_10_keys": keys,
-        "test_lookup_白飯": {"matched": matched_key, "found": matched_data is not None},
-        "test_key_repr": repr(test_key),
-        "first_db_key_repr": repr(list(_DB.keys())[0]),
-        "equal": test_key == list(_DB.keys())[0],
-    })
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
