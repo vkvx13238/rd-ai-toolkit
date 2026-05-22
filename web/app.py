@@ -176,9 +176,17 @@ def api_nutrition_lookup():
 
 @app.route("/nutrition-debug")
 def nutrition_debug():
-    from modules.nutrition_db import _DB
+    from modules.nutrition_db import _DB, _local_lookup
     keys = list(_DB.keys())[:10]
-    return jsonify({"first_10_keys": keys, "key_types": [type(k).__name__ for k in keys]})
+    test_key = "白飯"  # 白飯
+    matched_key, matched_data = _local_lookup(test_key)
+    return jsonify({
+        "first_10_keys": keys,
+        "test_lookup_白飯": {"matched": matched_key, "found": matched_data is not None},
+        "test_key_repr": repr(test_key),
+        "first_db_key_repr": repr(list(_DB.keys())[0]),
+        "equal": test_key == list(_DB.keys())[0],
+    })
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
