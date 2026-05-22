@@ -170,7 +170,12 @@ def api_nutrition_lookup():
         return jsonify({"error": "請輸入食物名稱"}), 400
     result = lookup(food, portion)
     if not result:
-        return jsonify({"error": f"找不到「{food}」，請試試：白飯、雞胸肉、nasi lemak、banana 等"}), 404
+        # 嘗試 unicode normalize 後再查一次
+        import unicodedata
+        food_nfc = unicodedata.normalize("NFC", food)
+        result = lookup(food_nfc, portion)
+    if not result:
+        return jsonify({"error": f"找不到「{food}」(repr:{repr(food)})，請試試英文名稱"}), 404
     return jsonify({"result": result})
 
 
