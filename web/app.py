@@ -163,15 +163,22 @@ def api_kajabi_builder():
 # ── 9. Nutrition Lookup ───────────────────────────────────────────────────────
 @app.route("/nutrition-lookup", methods=["POST"])
 def api_nutrition_lookup():
-    data = request.get_json()
-    food = data.get("food", "").strip()
-    portion = float(data.get("portion_g", 100))
+    data = request.get_json(force=True)
+    food = (data.get("food", "") or "").strip()
+    portion = float(data.get("portion_g", 100) or 100)
     if not food:
         return jsonify({"error": "請輸入食物名稱"}), 400
     result = lookup(food, portion)
     if not result:
-        return jsonify({"error": f"找不到「{food}」的資料，請試試英文名稱或換個寫法"}), 404
+        return jsonify({"error": f"找不到「{food}」，請試試：白飯、雞胸肉、nasi lemak、banana 等"}), 404
     return jsonify({"result": result})
+
+
+@app.route("/nutrition-debug")
+def nutrition_debug():
+    from modules.nutrition_db import _DB
+    keys = list(_DB.keys())[:10]
+    return jsonify({"first_10_keys": keys, "key_types": [type(k).__name__ for k in keys]})
 
 
 # ── Config ────────────────────────────────────────────────────────────────────
